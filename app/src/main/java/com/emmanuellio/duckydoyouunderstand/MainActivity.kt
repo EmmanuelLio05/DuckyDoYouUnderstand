@@ -1,40 +1,46 @@
 package com.emmanuellio.duckydoyouunderstand
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.ui.Modifier
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.emmanuellio.duckydoyouunderstand.ui.theme.DuckyDoYouUnderstandTheme
 import java.util.Locale
 
@@ -60,12 +66,13 @@ class MainActivity : ComponentActivity() {
 fun SpeechToText(
     modifier: Modifier
 ) {
-    val itemPadding=Modifier.padding(2.dp)
+    val itemPadding = Modifier.padding(2.dp)
     val context = LocalContext.current
     val speech = rememberSaveable {
         mutableStateOf<String?>(null)
     }
 
+    CheckForPermission(context)
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -78,17 +85,8 @@ fun SpeechToText(
             modifier = itemPadding
         )
 
-        Image(
-            painter = painterResource(
-                id = when (speech.value?.length) {
-                    in 0..25 -> R.drawable.very_happy
-                    in 26..50 -> R.drawable.happy
-                    in 51..75 -> R.drawable.worried
-                    in 76..Int.MAX_VALUE -> R.drawable.stressed
-                    else -> R.drawable.cool
-                }
-            ),
-            contentDescription = null,
+        Ducky(
+            speech = speech,
             modifier = itemPadding
                 .size(256.dp)
                 .weight(0.5f)
@@ -116,6 +114,51 @@ fun SpeechToText(
                     .size(56.dp)
             )
         }
+    }
+}
+
+@Composable
+fun Ducky(
+    speech: MutableState<String?>,
+    modifier: Modifier = Modifier
+) {
+    Image(
+        painter = painterResource(
+            id = when (speech.value?.length) {
+                in 0..25 -> R.drawable.very_happy
+                in 26..50 -> R.drawable.happy
+                in 51..75 -> R.drawable.worried
+                in 76..Int.MAX_VALUE -> R.drawable.stressed
+                else -> R.drawable.cool
+            }
+        ),
+        contentDescription = null,
+        modifier = modifier
+    )
+}
+
+@Composable
+fun CheckForPermission(
+    context: Context,
+    callBack: () -> Unit = {}
+) {
+    val RECORD_AUDIO_PERMISSION_GRANTED = ContextCompat.checkSelfPermission(
+        context,
+        Manifest.permission.RECORD_AUDIO
+    ) == PackageManager.PERMISSION_GRANTED
+    val requestPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+        onResult = { granted ->
+            Log.d("ONBOARDING-SCREEN", "PERMISSION GRANTED: $granted")
+            callBack()
+        }
+    )
+
+    LaunchedEffect(Unit) {
+        if (!RECORD_AUDIO_PERMISSION_GRANTED) {
+            Log.i("MAIN-ACTIVITY", "REQUESTING PERMISSION.")
+            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        } else callBack()
     }
 }
 
@@ -151,13 +194,7 @@ private fun getSpeechInput(
         }
 
         override fun onEvent(p0: Int, bundle: Bundle?) {
-            /*val result = bundle?.getStringArrayList(SpeechRecognizer.RECOGNITION_PARTS)
-            if (result != null) {
-                // attaching the output
-                // to our viewmodel
-                outputTxt = result[0]
-                Log.i(TAG, result[0])
-            }else Log.i(TAG, "result is null")*/
+            Log.i(TAG, bundle.toString())
         }
 
         override fun onError(p0: Int) {
@@ -169,8 +206,6 @@ private fun getSpeechInput(
             val result = bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
 
             if (result != null) {
-                // attaching the output
-                // to our viewmodel
                 speech.value = result[0]
                 Log.i(TAG, result[0])
             }
@@ -178,13 +213,7 @@ private fun getSpeechInput(
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         override fun onPartialResults(bundle: Bundle?) {
-            /*val result = bundle?.getStringArrayList(SpeechRecognizer.RECOGNITION_PARTS)
-            if (result != null) {
-                // attaching the output
-                // to our viewmodel
-                outputTxt = result[0]
-                Log.i(TAG, result[0])
-            }else Log.i(TAG, "result is null")*/
+            Log.i(TAG, bundle.toString())
         }
     })
     speechRecognizer.startListening(intent)
