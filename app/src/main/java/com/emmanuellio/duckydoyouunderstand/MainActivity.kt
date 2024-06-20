@@ -84,14 +84,7 @@ fun SpeechToText(
             textAlign = TextAlign.Center,
             modifier = itemPadding
         )
-
-        Ducky(
-            speech = speech,
-            modifier = itemPadding
-                .size(256.dp)
-                .weight(0.5f)
-        )
-
+        
         Text(
             text = speech.value ?: " ",
             style = MaterialTheme.typography.titleSmall,
@@ -118,26 +111,6 @@ fun SpeechToText(
 }
 
 @Composable
-fun Ducky(
-    speech: MutableState<String?>,
-    modifier: Modifier = Modifier
-) {
-    Image(
-        painter = painterResource(
-            id = when (speech.value?.length) {
-                in 0..25 -> R.drawable.very_happy
-                in 26..50 -> R.drawable.happy
-                in 51..75 -> R.drawable.worried
-                in 76..Int.MAX_VALUE -> R.drawable.stressed
-                else -> R.drawable.cool
-            }
-        ),
-        contentDescription = null,
-        modifier = modifier
-    )
-}
-
-@Composable
 fun CheckForPermission(
     context: Context,
     callBack: () -> Unit = {}
@@ -155,10 +128,6 @@ fun CheckForPermission(
     )
 
     LaunchedEffect(Unit) {
-        if (!RECORD_AUDIO_PERMISSION_GRANTED) {
-            Log.i("MAIN-ACTIVITY", "REQUESTING PERMISSION.")
-            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        } else callBack()
     }
 }
 
@@ -183,11 +152,9 @@ private fun getSpeechInput(
             Log.i(TAG, "Beginning speech.")
         }
 
-        override fun onRmsChanged(p0: Float) { /*Log.i(TAG, p0.toString())*/
-        }
+        override fun onRmsChanged(p0: Float) { Log.i(TAG, p0.toString()) }
 
-        override fun onBufferReceived(p0: ByteArray?) { /*Log.i(TAG, p0.toString())*/
-        }
+        override fun onBufferReceived(p0: ByteArray?) { Log.i(TAG, p0.toString()) }
 
         override fun onEndOfSpeech() {
             Log.i(TAG, "Ending speech.")
@@ -203,12 +170,7 @@ private fun getSpeechInput(
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         override fun onResults(bundle: Bundle?) {
-            val result = bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-
-            if (result != null) {
-                speech.value = result[0]
-                Log.i(TAG, result[0])
-            }
+            //TODO Update state
         }
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
