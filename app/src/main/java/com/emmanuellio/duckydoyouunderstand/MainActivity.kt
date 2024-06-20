@@ -84,7 +84,9 @@ fun SpeechToText(
             textAlign = TextAlign.Center,
             modifier = itemPadding
         )
-        
+
+        //TODO Add ducky composable
+
         Text(
             text = speech.value ?: " ",
             style = MaterialTheme.typography.titleSmall,
