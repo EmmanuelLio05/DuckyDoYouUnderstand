@@ -1,5 +1,4 @@
 package com.emmanuellio.duckydoyouunderstand
-
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -17,29 +16,18 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.emmanuellio.duckydoyouunderstand.ui.theme.DuckyDoYouUnderstandTheme
 import java.util.Locale
@@ -60,55 +48,24 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
 @Composable
 fun SpeechToText(
     modifier: Modifier
 ) {
-    val itemPadding = Modifier.padding(2.dp)
     val context = LocalContext.current
     val speech = rememberSaveable {
         mutableStateOf<String?>(null)
     }
 
     CheckForPermission(context)
-    Column(
-        modifier = modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.SpaceBetween
+    ChatScreen(
+        speech,
+        modifier
     ) {
-        Text(
-            text = "Ducky, do you understand?",
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-            modifier = itemPadding
-        )
-
-        //TODO Add ducky composable
-
-        Text(
-            text = speech.value ?: " ",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = itemPadding,
-            textAlign = TextAlign.Center
-        )
-
-        Button(
-            elevation = ButtonDefaults.buttonElevation(
-                defaultElevation = 0.dp, pressedElevation = 0.dp, disabledElevation = 0.dp
-            ),
-            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-            onClick = { getSpeechInput(speech, context = context) },
-        ) {
-            Icon(
-                painter = painterResource(id = R.drawable.microphone),
-                contentDescription = "Mic",
-                tint = Color.Green,
-                modifier = itemPadding
-                    .size(56.dp)
-            )
-        }
+        getSpeechInput(speech, context = context)
     }
 }
 
@@ -130,6 +87,10 @@ fun CheckForPermission(
     )
 
     LaunchedEffect(Unit) {
+        if (!RECORD_AUDIO_PERMISSION_GRANTED) {
+            Log.i("MAIN-ACTIVITY", "REQUESTING PERMISSION.")
+            requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        } else callBack()
     }
 }
 
@@ -146,6 +107,7 @@ private fun getSpeechInput(
         RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH
     )
     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+    intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000)
     speechRecognizer.setRecognitionListener(object : RecognitionListener {
         override fun onReadyForSpeech(p0: Bundle?) { /*Log.i(TAG, p0.toString())*/
         }
@@ -154,9 +116,11 @@ private fun getSpeechInput(
             Log.i(TAG, "Beginning speech.")
         }
 
-        override fun onRmsChanged(p0: Float) { Log.i(TAG, p0.toString()) }
+        override fun onRmsChanged(p0: Float) { /*Log.i(TAG, p0.toString())*/
+        }
 
-        override fun onBufferReceived(p0: ByteArray?) { Log.i(TAG, p0.toString()) }
+        override fun onBufferReceived(p0: ByteArray?) { /*Log.i(TAG, p0.toString())*/
+        }
 
         override fun onEndOfSpeech() {
             Log.i(TAG, "Ending speech.")
@@ -172,7 +136,13 @@ private fun getSpeechInput(
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
         override fun onResults(bundle: Bundle?) {
-            //TODO Update state
+            val result = bundle?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+
+            Log.i(TAG, result?.get(0)?.toString()?:"empty")
+            if (result != null) {
+                speech.value = result[0]
+                Log.i(TAG, result[0])
+            }
         }
 
         @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
