@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">DuckyDoYouUnderstand</string>
+    <string name="app_name">Patito, tu entiendes?</string>
+    <string name="ducky">Patito</string>
 </resources>
