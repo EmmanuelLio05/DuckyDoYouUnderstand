@@ -307,8 +307,3 @@ fun ChatBox(
         }
     }
 }
-
-enum class Owner {
-    User,
-    Ducky
-}

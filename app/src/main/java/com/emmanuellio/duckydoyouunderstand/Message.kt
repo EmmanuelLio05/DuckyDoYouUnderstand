@@ -8,3 +8,8 @@ data class Message(
     @DrawableRes val content: Int? = null,
     val time: Long
 )
+
+enum class Owner {
+    User,
+    Ducky
+}
